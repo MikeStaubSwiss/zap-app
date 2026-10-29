@@ -1,0 +1,700 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="ZAP-App – Zoom and Print: Bild scannen, vergrössern und als PDF auf mehrere A4-Seiten verteilt ausdrucken.">
+<meta name="theme-color" content="#0e1513">
+<style>
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;font:14px system-ui,sans-serif}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+<title>ZAP-App</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,500..800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: Bedienspalte links, grosse Poster-Vorschau rechts; auf dem Handy untereinander. Dunkel zuerst, wie die Spar-App. */
+:root {
+  --bg: #0e1513;
+  --surface: #16201d;
+  --surface-2: #1d2a26;
+  --line: #2a3a35;
+  --fg: #e7f0ec;
+  --muted: #8ea49c;
+  --accent: #3fd49a;
+  --accent-ink: #04271a;
+  --accent-soft: rgba(63, 212, 154, .14);
+  --warn: #f2b84b;
+  --paper: #ffffff;
+  --paper-shadow: rgba(0, 0, 0, .45);
+  --f-display: "Archivo", "Arial Narrow", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #eef3f1; --surface: #ffffff; --surface-2: #f4f8f6; --line: #d5e0dc;
+    --fg: #12201b; --muted: #5a6e67; --accent: #0f9e6a; --accent-ink: #ffffff;
+    --accent-soft: rgba(15, 158, 106, .12); --warn: #b7791f;
+    --paper: #ffffff; --paper-shadow: rgba(20, 40, 33, .18);
+    color-scheme: light;
+  }
+}
+:root[data-theme="light"] {
+  --bg: #eef3f1; --surface: #ffffff; --surface-2: #f4f8f6; --line: #d5e0dc;
+  --fg: #12201b; --muted: #5a6e67; --accent: #0f9e6a; --accent-ink: #ffffff;
+  --accent-soft: rgba(15, 158, 106, .12); --warn: #b7791f;
+  --paper: #ffffff; --paper-shadow: rgba(20, 40, 33, .18);
+  color-scheme: light;
+}
+
+html, body { background: var(--bg); color: var(--fg); }
+body {
+  font-family: var(--f-body);
+  font-size: 15px;
+  line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 18px 40px;
+}
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 20px; }
+
+header { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+h1 {
+  font-family: var(--f-display);
+  font-stretch: 112%;
+  font-weight: 800;
+  font-size: clamp(30px, 6vw, 44px);
+  line-height: 1;
+  letter-spacing: -.02em;
+  margin: 0;
+}
+h1 span { color: var(--accent); }
+.tagline { margin: 8px 0 0; font-family: var(--f-display); font-weight: 700; font-size: 18px; color: var(--accent); letter-spacing: .01em; }
+.tagline + .lead { margin-top: 2px; }
+.lead { margin: 6px 0 0; color: var(--muted); max-width: 52ch; }
+
+.layout { display: grid; gap: 20px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 900px) { .layout { grid-template-columns: 360px minmax(0, 1fr); align-items: start; } .controls { position: sticky; top: 16px; } }
+
+.controls { display: grid; gap: 14px; min-width: 0; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: grid; gap: 14px; min-width: 0; }
+.panel h2 {
+  margin: 0; display: flex; align-items: center; gap: 10px;
+  font-family: var(--f-display); font-stretch: 100%; font-weight: 700; font-size: 17px; text-wrap: balance;
+}
+.step {
+  width: 24px; height: 24px; border-radius: 50%; display: inline-grid; place-items: center;
+  background: var(--accent-soft); color: var(--accent); font: 600 12px var(--f-mono);
+}
+.label { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
+
+.btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn {
+  appearance: none; border: 1px solid var(--line); background: var(--surface-2); color: var(--fg);
+  font: 500 14px var(--f-body); padding: 10px 14px; border-radius: 10px; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 8px; min-height: 42px;
+}
+.btn:hover { border-color: var(--accent); }
+.btn:focus-visible, .chip:focus-visible, .seg button:focus-visible, .stepper button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.big { width: 100%; justify-content: center; min-height: 50px; font-size: 16px; }
+.btn[disabled] { opacity: .55; cursor: progress; }
+.btn svg { width: 18px; height: 18px; flex: none; }
+.file-input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+
+.img-info { display: flex; gap: 12px; align-items: center; min-width: 0; }
+.img-info canvas { width: 56px; height: 56px; border-radius: 8px; background: var(--surface-2); flex: none; object-fit: contain; }
+.img-info div { min-width: 0; }
+.img-info strong { display: block; font-weight: 600; overflow-wrap: anywhere; }
+.img-info small { color: var(--muted); font-family: var(--f-mono); font-size: 12px; }
+.tag { display: inline-block; font-size: 11px; padding: 2px 7px; border-radius: 99px; background: var(--accent-soft); color: var(--accent); font-weight: 600; letter-spacing: .04em; margin-left: 4px; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  appearance: none; border: 1px solid var(--line); background: transparent; color: var(--fg);
+  font: 500 14px var(--f-mono); min-width: 44px; height: 40px; border-radius: 10px; cursor: pointer;
+}
+.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+
+.grid-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.field { display: grid; gap: 6px; min-width: 0; }
+.stepper { display: flex; align-items: center; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--surface-2); }
+.stepper button { appearance: none; border: 0; background: transparent; color: var(--fg); width: 40px; height: 40px; font-size: 20px; cursor: pointer; }
+.stepper button:hover { color: var(--accent); }
+.stepper output { flex: 1; text-align: center; font: 500 16px var(--f-mono); font-variant-numeric: tabular-nums; }
+
+.seg { display: flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--surface-2); }
+.seg button { flex: 1; appearance: none; border: 0; background: transparent; color: var(--muted); font: 500 13px var(--f-body); padding: 9px 6px; cursor: pointer; min-height: 40px; }
+.seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+
+.range { display: grid; gap: 4px; }
+.range-head { display: flex; justify-content: space-between; align-items: baseline; }
+.range-head output { font: 500 13px var(--f-mono); color: var(--fg); }
+input[type="range"] { width: 100%; accent-color: var(--accent); }
+.pct-num { font: 500 14px var(--f-mono); white-space: nowrap; }
+.pct-num input { width: 72px; font: 500 15px var(--f-mono); text-align: right; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2); color: var(--fg); }
+.stepper.locked { opacity: .5; }
+.stepper.locked button { cursor: not-allowed; }
+.check { display: flex; align-items: center; gap: 10px; font-size: 14px; cursor: pointer; }
+.check input { width: 18px; height: 18px; accent-color: var(--accent); }
+
+/* Vorschau */
+.stage { display: grid; gap: 16px; min-width: 0; }
+.poster-card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: grid; gap: 14px; min-width: 0; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+.stat { background: var(--surface-2); border-radius: 10px; padding: 10px 12px; min-width: 0; }
+.stat .v { font: 600 20px var(--f-display); font-stretch: 95%; font-variant-numeric: tabular-nums; line-height: 1.15; }
+.stat .v small { font: 400 12px var(--f-mono); color: var(--muted); }
+.stat.warn .v { color: var(--warn); }
+.poster-box { display: grid; place-items: center; background: var(--surface-2); border-radius: 10px; padding: 18px; min-height: 260px; overflow: hidden; }
+#posterCanvas { max-width: 100%; height: auto; display: block; box-shadow: 0 10px 30px var(--paper-shadow); border-radius: 2px; }
+.hint { color: var(--muted); font-size: 13px; margin: 0; }
+.hint.warn { color: var(--warn); }
+
+.pages-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.pages-head h2 { margin: 0; font-family: var(--f-display); font-weight: 700; font-size: 17px; display: flex; align-items: center; gap: 10px; }
+.pages { display: grid; gap: 12px; grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr)); }
+.sheet { display: grid; gap: 6px; min-width: 0; }
+.sheet canvas { width: 100%; height: auto; display: block; background: var(--paper); box-shadow: 0 4px 14px var(--paper-shadow); border-radius: 2px; }
+.sheet span { font: 500 12px var(--f-mono); color: var(--muted); text-align: center; }
+
+.export { display: grid; gap: 10px; }
+.toast { font-size: 14px; padding: 10px 12px; border-radius: 10px; background: var(--accent-soft); color: var(--fg); }
+.toast.err { background: rgba(242, 184, 75, .15); }
+.progress { height: 6px; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
+.progress i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .15s; }
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>ZAP<span>-</span>App</h1>
+      <p class="tagline">Zoom and Print</p>
+      <p class="lead">Bild scannen, vergrössern und auf mehrere A4-Seiten verteilen. Ergebnis ist ein PDF zum Ausdrucken und Zusammenkleben.</p>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="controls">
+      <section class="panel" aria-labelledby="h-bild">
+        <h2 id="h-bild"><span class="step">1</span>Bild</h2>
+        <div class="img-info">
+          <canvas id="thumb" width="112" height="112"></canvas>
+          <div>
+            <strong id="imgName">Beispielbild <span class="tag">BEISPIEL</span></strong>
+            <small id="imgMeta">–</small>
+          </div>
+        </div>
+        <div class="btn-row">
+          <label class="btn primary" for="camInput">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
+            Scannen
+          </label>
+          <input class="file-input" id="camInput" type="file" accept="image/*" capture="environment">
+          <label class="btn" for="fileInput">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m3 16 5-5 4 4 3-3 6 6"/></svg>
+            Bild wählen
+          </label>
+          <input class="file-input" id="fileInput" type="file" accept="image/*">
+          <button class="btn" id="rotateBtn" type="button" aria-label="Bild um 90 Grad drehen">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>
+            Drehen
+          </button>
+        </div>
+        <p class="hint">«Scannen» öffnet auf dem Handy direkt die Kamera. Bild möglichst gerade und formatfüllend fotografieren.</p>
+      </section>
+
+      <section class="panel" aria-labelledby="h-teilen">
+        <h2 id="h-teilen"><span class="step">2</span>Aufteilung</h2>
+        <div class="field">
+          <span class="label">Grösse festlegen über</span>
+          <div class="seg" id="modeSeg">
+            <button type="button" data-v="pages" aria-pressed="true">Seitenanzahl</button>
+            <button type="button" data-v="percent" aria-pressed="false">Prozent</button>
+          </div>
+        </div>
+        <div class="field" id="percentBox" hidden>
+          <span class="label">Vergrösserung</span>
+          <div class="chips" id="pctChips"></div>
+          <div class="range">
+            <div class="range-head"><label class="hint" for="pctIn">Frei wählen (100 % = Bild füllt eine A4-Seite)</label>
+              <span class="pct-num"><input type="number" id="pctNum" min="25" max="1000" step="5" value="200" inputmode="numeric" aria-label="Prozent"> %</span></div>
+            <input type="range" id="pctIn" min="25" max="1000" step="5" value="200">
+          </div>
+        </div>
+        <div class="field" id="pagesBox">
+          <span class="label">Anzahl A4-Seiten</span>
+          <div class="chips" id="chips"></div>
+        </div>
+        <div class="grid-row" id="gridBox">
+          <div class="field">
+            <span class="label">Spalten</span>
+            <div class="stepper"><button type="button" id="colMinus" aria-label="Spalte weniger">−</button><output id="colsOut">2</output><button type="button" id="colPlus" aria-label="Spalte mehr">+</button></div>
+          </div>
+          <div class="field">
+            <span class="label">Zeilen</span>
+            <div class="stepper"><button type="button" id="rowMinus" aria-label="Zeile weniger">−</button><output id="rowsOut">2</output><button type="button" id="rowPlus" aria-label="Zeile mehr">+</button></div>
+          </div>
+        </div>
+        <div class="field">
+          <span class="label">Blattausrichtung</span>
+          <div class="seg" id="orientSeg">
+            <button type="button" data-v="p" aria-pressed="true">Hochformat</button>
+            <button type="button" data-v="l" aria-pressed="false">Querformat</button>
+          </div>
+        </div>
+        <div class="field" id="fitBox">
+          <span class="label">Einpassen</span>
+          <div class="seg" id="fitSeg">
+            <button type="button" data-v="contain" aria-pressed="true">Ganzes Bild</button>
+            <button type="button" data-v="cover" aria-pressed="false">Seiten füllen</button>
+          </div>
+        </div>
+        <div class="range">
+          <div class="range-head"><label class="label" for="marginIn">Druckrand</label><output id="marginOut">8 mm</output></div>
+          <input type="range" id="marginIn" min="3" max="20" step="1" value="8">
+        </div>
+        <div class="range">
+          <div class="range-head"><label class="label" for="overlapIn">Klebezugabe (Überlappung)</label><output id="overlapOut">10 mm</output></div>
+          <input type="range" id="overlapIn" min="0" max="30" step="1" value="10">
+        </div>
+        <label class="check"><input type="checkbox" id="guidesIn" checked> Klebelinien und Seitenbeschriftung drucken</label>
+      </section>
+    </aside>
+
+    <main class="stage">
+      <section class="poster-card" aria-labelledby="h-vorschau">
+        <div class="pages-head"><h2 id="h-vorschau"><span class="step">3</span>Vorschau Poster</h2></div>
+        <div class="stats" id="stats"></div>
+        <div class="poster-box"><canvas id="posterCanvas" width="600" height="800" aria-label="Vorschau des Posters mit Seitenraster"></canvas></div>
+        <p class="hint" id="qualityHint"></p>
+      </section>
+
+      <section class="poster-card" aria-labelledby="h-pdf">
+        <div class="pages-head">
+          <h2 id="h-pdf"><span class="step">4</span>PDF-Seiten</h2>
+          <span class="hint" id="pagesCount"></span>
+        </div>
+        <div class="pages" id="pages"></div>
+        <div class="export">
+          <button class="btn primary big" id="pdfBtn" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+            PDF erstellen und speichern
+          </button>
+          <div class="progress" id="progress" hidden><i id="progressBar"></i></div>
+          <div class="toast" id="toast" hidden></div>
+          <p class="hint">Beim Drucken «Tatsächliche Grösse» bzw. 100 % wählen, nicht «An Seite anpassen». Sonst stimmen die Klebelinien nicht.</p>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+(() => {
+  const A4 = { w: 210, h: 297 };
+  const state = {
+    img: null, name: "Beispielbild", sample: true,
+    cols: 2, rows: 2, orient: "p", fit: "contain",
+    mode: "pages", percent: 200,
+    margin: 8, overlap: 10, guides: true
+  };
+  const $ = id => document.getElementById(id);
+  const fmt = (n, d = 1) => n.toLocaleString("de-CH", { minimumFractionDigits: d, maximumFractionDigits: d });
+  const rowLabel = r => String.fromCharCode(65 + (r % 26)) + (r >= 26 ? Math.floor(r / 26) : "");
+
+  /* ---------- Beispielbild ---------- */
+  function makeSample() {
+    const c = document.createElement("canvas");
+    c.width = 1600; c.height = 1200;
+    const x = c.getContext("2d");
+    const sky = x.createLinearGradient(0, 0, 0, 1200);
+    sky.addColorStop(0, "#1b4d6b"); sky.addColorStop(.55, "#f2a65a"); sky.addColorStop(1, "#f7d9a6");
+    x.fillStyle = sky; x.fillRect(0, 0, 1600, 1200);
+    x.fillStyle = "#fff4d6"; x.beginPath(); x.arc(1150, 560, 110, 0, Math.PI * 2); x.fill();
+    const layer = (col, base, amp, seed) => {
+      x.fillStyle = col; x.beginPath(); x.moveTo(0, 1200);
+      for (let i = 0; i <= 1600; i += 20) {
+        const y = base - Math.abs(Math.sin(i / 230 + seed) * amp) - Math.sin(i / 71 + seed * 3) * amp * .18;
+        x.lineTo(i, y);
+      }
+      x.lineTo(1600, 1200); x.closePath(); x.fill();
+    };
+    layer("#6d7f9a", 760, 260, 1.2);
+    layer("#3f5570", 860, 210, 2.7);
+    layer("#24384a", 980, 150, .4);
+    layer("#13222d", 1100, 90, 4.1);
+    x.fillStyle = "rgba(255,255,255,.85)"; x.font = "600 54px Archivo, Arial, sans-serif";
+    x.fillText("Beispielbild", 70, 120);
+    const img = new Image();
+    img.onload = () => { state.img = img; refreshAll(); };
+    img.src = c.toDataURL("image/jpeg", .92);
+  }
+
+  /* ---------- Geometrie ---------- */
+  function sheet(orient = state.orient) {
+    return orient === "p" ? { w: A4.w, h: A4.h } : { w: A4.h, h: A4.w };
+  }
+  function layout(s = state) {
+    const sh = sheet(s.orient);
+    const pw = sh.w - 2 * s.margin, ph = sh.h - 2 * s.margin;
+    const stepX = pw - s.overlap, stepY = ph - s.overlap;
+    const W = s.cols * pw - (s.cols - 1) * s.overlap;
+    const H = s.rows * ph - (s.rows - 1) * s.overlap;
+    const iw = s.img ? s.img.naturalWidth : 4, ih = s.img ? s.img.naturalHeight : 3;
+    const base = baseScale(s);
+    const sc = s.mode === "percent" ? base * s.percent / 100
+      : s.fit === "cover" ? Math.max(W / iw, H / ih) : Math.min(W / iw, H / ih);
+    const dw = iw * sc, dh = ih * sc;
+    return { sh, pw, ph, stepX, stepY, W, H, ix: (W - dw) / 2, iy: (H - dh) / 2, dw, dh, iw, ih, pct: sc / base * 100 };
+  }
+  // 100 % = Bild passt genau auf eine A4-Seite (beste Ausrichtung, innerhalb Druckrand)
+  function baseScale(s = state) {
+    const iw = s.img ? s.img.naturalWidth : 4, ih = s.img ? s.img.naturalHeight : 3;
+    const a = A4.w - 2 * s.margin, b = A4.h - 2 * s.margin;
+    return Math.max(Math.min(a / iw, b / ih), Math.min(b / iw, a / ih));
+  }
+  function gridForPercent(orient) {
+    const sh = sheet(orient);
+    const pw = sh.w - 2 * state.margin, ph = sh.h - 2 * state.margin, o = state.overlap;
+    const sc = baseScale() * state.percent / 100;
+    const dw = state.img.naturalWidth * sc, dh = state.img.naturalHeight * sc;
+    const cols = dw <= pw + 0.01 ? 1 : Math.ceil((dw - o) / (pw - o) - 1e-6);
+    const rows = dh <= ph + 0.01 ? 1 : Math.ceil((dh - o) / (ph - o) - 1e-6);
+    return { cols, rows, n: cols * rows, orient };
+  }
+  function applyPercent(autoOrient) {
+    if (!state.img) return;
+    let g = gridForPercent(state.orient);
+    if (autoOrient) {
+      const other = gridForPercent(state.orient === "p" ? "l" : "p");
+      if (other.n < g.n) g = other;
+    }
+    state.cols = g.cols; state.rows = g.rows; state.orient = g.orient;
+  }
+  function setPercent(p) {
+    state.percent = Math.max(25, Math.min(1000, Math.round(+p || 100)));
+    state.mode = "percent"; applyPercent(true); refreshAll();
+  }
+  function bestGrid(n) {
+    let best = null;
+    for (const orient of ["p", "l"]) {
+      for (let c = 1; c <= n; c++) {
+        if (n % c) continue;
+        const r = n / c;
+        const L = layout({ ...state, cols: c, rows: r, orient, fit: "contain", mode: "pages" });
+        const used = L.dw * L.dh;
+        if (!best || used > best.used + 1) best = { c, r, orient, used };
+      }
+    }
+    return best;
+  }
+
+  /* ---------- Kachel zeichnen ---------- */
+  function drawTile(ctx, c, r, k, L, withGuides) {
+    const x0 = c * L.stepX, y0 = r * L.stepY;
+    ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, L.pw * k, L.ph * k);
+    ctx.save();
+    ctx.beginPath(); ctx.rect(0, 0, L.pw * k, L.ph * k); ctx.clip();
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(state.img, (L.ix - x0) * k, (L.iy - y0) * k, L.dw * k, L.dh * k);
+    ctx.restore();
+    if (withGuides && state.overlap > 0) {
+      ctx.save();
+      ctx.strokeStyle = "rgba(0,0,0,.55)"; ctx.lineWidth = Math.max(1, .25 * k);
+      ctx.setLineDash([2 * k, 1.5 * k]);
+      if (c < state.cols - 1) { const gx = (L.pw - state.overlap) * k; ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, L.ph * k); ctx.stroke(); }
+      if (r < state.rows - 1) { const gy = (L.ph - state.overlap) * k; ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(L.pw * k, gy); ctx.stroke(); }
+      ctx.restore();
+    }
+  }
+
+  /* ---------- Vorschau ---------- */
+  function renderPoster() {
+    const L = layout();
+    const cv = $("posterCanvas");
+    const box = cv.parentElement.getBoundingClientRect();
+    const maxW = Math.max(200, box.width - 36), maxH = Math.max(320, Math.min(window.innerHeight * .62, 760));
+    const pad = 0;
+    const k = Math.min(maxW / L.W, maxH / L.H);
+    const dpr = window.devicePixelRatio || 1;
+    cv.width = Math.round(L.W * k * dpr); cv.height = Math.round(L.H * k * dpr);
+    cv.style.width = Math.round(L.W * k) + "px";
+    const x = cv.getContext("2d");
+    x.setTransform(dpr, 0, 0, dpr, 0, 0);
+    x.fillStyle = "#fff"; x.fillRect(0, 0, L.W * k, L.H * k);
+    x.save(); x.beginPath(); x.rect(0, 0, L.W * k, L.H * k); x.clip();
+    x.drawImage(state.img, L.ix * k, L.iy * k, L.dw * k, L.dh * k);
+    x.restore();
+    // Überlappungen
+    const accent = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || "#3fd49a";
+    x.fillStyle = hexA(accent, .22);
+    for (let c = 1; c < state.cols; c++) x.fillRect(c * L.stepX * k, 0, state.overlap * k, L.H * k);
+    for (let r = 1; r < state.rows; r++) x.fillRect(0, r * L.stepY * k, L.W * k, state.overlap * k);
+    // Seitengrenzen
+    x.strokeStyle = accent; x.lineWidth = 1.5;
+    for (let r = 0; r < state.rows; r++) for (let c = 0; c < state.cols; c++) {
+      x.strokeRect(c * L.stepX * k + .75, r * L.stepY * k + .75, L.pw * k - 1.5, L.ph * k - 1.5);
+    }
+    // Beschriftung
+    const fs = Math.max(11, Math.min(22, L.pw * k * .1));
+    x.font = `600 ${fs}px "IBM Plex Mono", monospace`; x.textAlign = "center"; x.textBaseline = "middle";
+    for (let r = 0; r < state.rows; r++) for (let c = 0; c < state.cols; c++) {
+      const cx = (c * L.stepX + L.pw / 2) * k, cy = (r * L.stepY + L.ph / 2) * k;
+      const t = rowLabel(r) + (c + 1);
+      x.fillStyle = "rgba(10,20,16,.72)";
+      x.beginPath(); x.arc(cx, cy, fs * 1.25, 0, Math.PI * 2); x.fill();
+      x.fillStyle = "#fff"; x.fillText(t, cx, cy + 1);
+    }
+  }
+  function hexA(hex, a) {
+    const m = hex.replace("#", "");
+    if (m.length !== 6) return `rgba(63,212,154,${a})`;
+    return `rgba(${parseInt(m.slice(0, 2), 16)},${parseInt(m.slice(2, 4), 16)},${parseInt(m.slice(4, 6), 16)},${a})`;
+  }
+
+  function renderPages() {
+    const L = layout();
+    const wrap = $("pages");
+    wrap.style.setProperty("--cols", Math.min(state.cols, window.innerWidth < 520 ? 3 : 6));
+    wrap.innerHTML = "";
+    const thumbW = Math.min(260, Math.max(90, wrap.getBoundingClientRect().width / Math.min(state.cols, 6)));
+    const k = (thumbW * (window.devicePixelRatio || 1)) / L.sh.w;
+    for (let r = 0; r < state.rows; r++) for (let c = 0; c < state.cols; c++) {
+      const fig = document.createElement("div"); fig.className = "sheet";
+      const cv = document.createElement("canvas");
+      cv.width = Math.round(L.sh.w * k); cv.height = Math.round(L.sh.h * k);
+      const x = cv.getContext("2d");
+      x.fillStyle = "#fff"; x.fillRect(0, 0, cv.width, cv.height);
+      x.save(); x.translate(state.margin * k, state.margin * k);
+      drawTile(x, c, r, k, L, state.guides);
+      x.restore();
+      x.strokeStyle = "rgba(0,0,0,.12)"; x.setLineDash([3, 3]);
+      x.strokeRect(state.margin * k, state.margin * k, L.pw * k, L.ph * k);
+      cv.setAttribute("aria-label", `Seite ${rowLabel(r)}${c + 1}`);
+      const lab = document.createElement("span");
+      lab.textContent = `${rowLabel(r)}${c + 1} · S. ${r * state.cols + c + 1}`;
+      fig.append(cv, lab); wrap.append(fig);
+    }
+    $("pagesCount").textContent = `${state.cols * state.rows} Seiten A4 ${state.orient === "p" ? "hoch" : "quer"}`;
+  }
+
+  function renderStats() {
+    const L = layout();
+    const visW = Math.min(L.dw, L.W), visH = Math.min(L.dh, L.H);
+    const pxPerMm = state.fit === "cover" ? L.iw / L.dw : L.iw / L.dw;
+    const dpi = pxPerMm * 25.4;
+    const s = $("stats");
+    s.innerHTML = `
+      <div class="stat"><div class="label">Postergrösse</div><div class="v">${fmt(L.W / 10)} × ${fmt(L.H / 10)} <small>cm</small></div></div>
+      <div class="stat"><div class="label">Bildfläche</div><div class="v">${fmt(visW / 10)} × ${fmt(visH / 10)} <small>cm</small></div></div>
+      <div class="stat"><div class="label">Vergrösserung</div><div class="v">${Math.round(L.pct)} <small>%</small></div></div>
+      <div class="stat ${dpi < 100 ? "warn" : ""}"><div class="label">Druckauflösung</div><div class="v">${Math.round(dpi)} <small>dpi</small></div></div>`;
+    const h = $("qualityHint");
+    if (dpi < 70) { h.className = "hint warn"; h.textContent = "Das Bild hat für diese Grösse zu wenig Pixel und wird deutlich unscharf. Weniger Seiten wählen oder mit höherer Auflösung scannen."; }
+    else if (dpi < 100) { h.className = "hint warn"; h.textContent = "Leicht unscharf aus der Nähe, aus etwas Abstand gut. Ab etwa 100 dpi wirkt es sauber."; }
+    else { h.className = "hint"; h.textContent = "Grün schraffiert ist die Klebezugabe: dort überlappen sich die Blätter. Die Buchstaben-Zahl-Codes stehen auch auf dem Ausdruck."; }
+    $("imgMeta").textContent = `${L.iw} × ${L.ih} px`;
+  }
+
+  function renderThumb() {
+    const cv = $("thumb"), x = cv.getContext("2d");
+    x.clearRect(0, 0, 112, 112);
+    const sc = Math.min(112 / state.img.naturalWidth, 112 / state.img.naturalHeight);
+    const w = state.img.naturalWidth * sc, h = state.img.naturalHeight * sc;
+    x.drawImage(state.img, (112 - w) / 2, (112 - h) / 2, w, h);
+  }
+
+  function renderControls() {
+    $("colsOut").textContent = state.cols; $("rowsOut").textContent = state.rows;
+    const n = state.cols * state.rows;
+    document.querySelectorAll("#chips .chip").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.n === n)));
+    document.querySelectorAll("#orientSeg button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === state.orient)));
+    document.querySelectorAll("#fitSeg button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === state.fit)));
+    document.querySelectorAll("#modeSeg button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === state.mode)));
+    const pm = state.mode === "percent";
+    $("percentBox").hidden = !pm; $("pagesBox").hidden = pm; $("fitBox").hidden = pm;
+    document.querySelectorAll("#pctChips .chip").forEach(b => b.setAttribute("aria-pressed", String(pm && +b.dataset.p === state.percent)));
+    if (document.activeElement !== $("pctNum")) $("pctNum").value = state.percent;
+    $("pctIn").value = state.percent;
+    $("marginOut").textContent = state.margin + " mm"; $("overlapOut").textContent = state.overlap + " mm";
+    const name = $("imgName");
+    name.textContent = state.name;
+    if (state.sample) { const t = document.createElement("span"); t.className = "tag"; t.textContent = "BEISPIEL"; name.append(" ", t); }
+  }
+
+  let raf = 0;
+  function refreshAll() {
+    if (!state.img) return;
+    if (state.mode === "percent") applyPercent(false);
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(() => { renderControls(); renderThumb(); renderStats(); renderPoster(); renderPages(); });
+  }
+
+  /* ---------- Bedienung ---------- */
+  [2, 3, 4, 6, 8, 9, 12, 16, 20].forEach(n => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "chip"; b.dataset.n = n; b.textContent = n;
+    b.setAttribute("aria-pressed", "false");
+    b.addEventListener("click", () => {
+      state.mode = "pages"; const g = bestGrid(n); state.cols = g.c; state.rows = g.r; state.orient = g.orient; refreshAll();
+    });
+    $("chips").append(b);
+  });
+  const clamp = v => Math.max(1, Math.min(10, v));
+  $("colMinus").onclick = () => { state.mode = "pages"; state.cols = clamp(state.cols - 1); refreshAll(); };
+  $("colPlus").onclick = () => { state.mode = "pages"; state.cols = clamp(state.cols + 1); refreshAll(); };
+  $("rowMinus").onclick = () => { state.mode = "pages"; state.rows = clamp(state.rows - 1); refreshAll(); };
+  $("rowPlus").onclick = () => { state.mode = "pages"; state.rows = clamp(state.rows + 1); refreshAll(); };
+  [100, 150, 200, 250, 300, 400, 500].forEach(p => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "chip"; b.dataset.p = p; b.textContent = p + "%";
+    b.setAttribute("aria-pressed", "false");
+    b.addEventListener("click", () => setPercent(p));
+    $("pctChips").append(b);
+  });
+  $("pctIn").oninput = e => setPercent(e.target.value);
+  $("pctNum").onchange = e => setPercent(e.target.value);
+  $("pctNum").onkeydown = e => { if (e.key === "Enter") setPercent(e.target.value); };
+  document.querySelectorAll("#modeSeg button").forEach(b => b.onclick = () => {
+    if (b.dataset.v === state.mode) return;
+    if (b.dataset.v === "percent") {
+      state.percent = Math.max(25, Math.min(1000, Math.round(layout().pct / 5) * 5));
+      state.mode = "percent"; applyPercent(false);
+    } else state.mode = "pages";
+    refreshAll();
+  });
+  document.querySelectorAll("#orientSeg button").forEach(b => b.onclick = () => { state.orient = b.dataset.v; refreshAll(); });
+  document.querySelectorAll("#fitSeg button").forEach(b => b.onclick = () => { state.fit = b.dataset.v; refreshAll(); });
+  $("marginIn").oninput = e => { state.margin = +e.target.value; refreshAll(); };
+  $("overlapIn").oninput = e => { state.overlap = +e.target.value; refreshAll(); };
+  $("guidesIn").onchange = e => { state.guides = e.target.checked; refreshAll(); };
+
+  function loadFile(file) {
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      // Sehr grosse Fotos begrenzen, damit das Handy nicht ausgeht
+      const max = 7000, big = Math.max(img.naturalWidth, img.naturalHeight);
+      if (big > max) {
+        const s = max / big, c = document.createElement("canvas");
+        c.width = Math.round(img.naturalWidth * s); c.height = Math.round(img.naturalHeight * s);
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        const im2 = new Image(); im2.onload = () => setImg(im2, file.name); im2.src = c.toDataURL("image/jpeg", .93);
+        URL.revokeObjectURL(url);
+      } else setImg(img, file.name);
+    };
+    img.onerror = () => { showToast("Dieses Bildformat kann der Browser nicht öffnen. Bitte als JPG oder PNG speichern und erneut wählen.", true); URL.revokeObjectURL(url); };
+    img.src = url;
+  }
+  function setImg(img, name) {
+    state.img = img; state.name = name || "Scan"; state.sample = false;
+    if (state.mode === "percent") applyPercent(true);
+    else { const g = bestGrid(state.cols * state.rows); state.cols = g.c; state.rows = g.r; state.orient = g.orient; }
+    $("toast").hidden = true; refreshAll();
+  }
+  $("camInput").onchange = e => { loadFile(e.target.files[0]); e.target.value = ""; };
+  $("fileInput").onchange = e => { loadFile(e.target.files[0]); e.target.value = ""; };
+
+  $("rotateBtn").onclick = () => {
+    if (!state.img) return;
+    const c = document.createElement("canvas");
+    c.width = state.img.naturalHeight; c.height = state.img.naturalWidth;
+    const x = c.getContext("2d");
+    x.translate(c.width, 0); x.rotate(Math.PI / 2); x.drawImage(state.img, 0, 0);
+    const img = new Image();
+    img.onload = () => {
+      state.img = img;
+      if (state.mode === "percent") applyPercent(true);
+      else { const g = bestGrid(state.cols * state.rows); state.cols = g.c; state.rows = g.r; state.orient = g.orient; }
+      refreshAll();
+    };
+    img.src = c.toDataURL("image/jpeg", .93);
+  };
+
+  // Bild auch per Drag & Drop oder Einfügen
+  window.addEventListener("dragover", e => e.preventDefault());
+  window.addEventListener("drop", e => { e.preventDefault(); const f = [...(e.dataTransfer?.files || [])].find(f => f.type.startsWith("image/")); if (f) loadFile(f); });
+  window.addEventListener("paste", e => { const f = [...(e.clipboardData?.files || [])].find(f => f.type.startsWith("image/")); if (f) loadFile(f); });
+
+  let rt = 0;
+  window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(refreshAll, 120); });
+
+  /* ---------- PDF ---------- */
+  function showToast(msg, err) { const t = $("toast"); t.textContent = msg; t.className = "toast" + (err ? " err" : ""); t.hidden = false; }
+
+  let downloads = null;
+  if (window.claude?.use) window.claude.use("downloads").then(d => { downloads = d; }).catch(() => {});
+
+  $("pdfBtn").onclick = async () => {
+    if (!state.img) return;
+    if (!window.jspdf) { showToast("Die PDF-Funktion konnte nicht geladen werden. Seite neu laden und nochmals versuchen.", true); return; }
+    const btn = $("pdfBtn"); btn.disabled = true;
+    const bar = $("progressBar"); $("progress").hidden = false; bar.style.width = "0%";
+    $("toast").hidden = true;
+    try {
+      const L = layout();
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: state.orient === "p" ? "portrait" : "landscape", unit: "mm", format: "a4", compress: true });
+      // Auflösung: nicht höher als das Bild hergibt, max. 200 dpi
+      const srcPxPerMm = L.iw / L.dw;
+      const k = Math.max(4, Math.min(200 / 25.4, srcPxPerMm * 1.1));
+      const cv = document.createElement("canvas");
+      cv.width = Math.round(L.pw * k); cv.height = Math.round(L.ph * k);
+      const x = cv.getContext("2d");
+      const total = state.cols * state.rows; let i = 0;
+      for (let r = 0; r < state.rows; r++) for (let c = 0; c < state.cols; c++) {
+        if (i > 0) doc.addPage("a4", state.orient === "p" ? "portrait" : "landscape");
+        drawTile(x, c, r, k, L, state.guides);
+        doc.addImage(cv.toDataURL("image/jpeg", .9), "JPEG", state.margin, state.margin, L.pw, L.ph, undefined, "FAST");
+        if (state.guides && state.margin >= 5) {
+          doc.setFontSize(7); doc.setTextColor(110);
+          doc.text(`${rowLabel(r)}${c + 1}   Seite ${i + 1}/${total}   Zeile ${rowLabel(r)}, Spalte ${c + 1}`, state.margin, state.margin - 1.8);
+        }
+        i++; bar.style.width = Math.round(i / total * 100) + "%";
+        await new Promise(res => setTimeout(res, 0));
+      }
+      const blob = doc.output("blob");
+      const base = (state.sample ? "zoom-beispiel" : state.name.replace(/\.[^.]+$/, "")).replace(/[^\w\-äöüÄÖÜ]+/g, "-").slice(0, 60) || "zoom";
+      const fname = `${base}_${state.cols}x${state.rows}_A4.pdf`;
+      if (!downloads) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url; a.download = fname; document.body.append(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
+        showToast(`PDF gespeichert (${total} Seiten, ${fmt(blob.size / 1048576)} MB). Jetzt öffnen und mit 100 % drucken.`);
+        return;
+      }
+      try {
+        await downloads.save({ filename: fname, data: blob });
+        showToast(`PDF gespeichert (${total} Seiten, ${fmt(blob.size / 1048576)} MB). Jetzt öffnen und mit 100 % drucken.`);
+      } catch (err) {
+        if (err?.code === "declined") showToast("Speichern abgebrochen.", true);
+        else if (err?.code === "rate_limited") showToast("Es ist schon ein Speicherdialog offen. Kurz warten und nochmals tippen.", true);
+        else showToast("Das PDF konnte hier nicht gespeichert werden.", true);
+      }
+    } catch (e) {
+      showToast("Beim Erstellen des PDFs ist ein Fehler aufgetreten. Weniger Seiten oder ein kleineres Bild versuchen.", true);
+    } finally {
+      btn.disabled = false; setTimeout(() => { $("progress").hidden = true; }, 400);
+    }
+  };
+
+  makeSample();
+})();
+</script>
+
+</body>
+</html>
