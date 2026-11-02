@@ -75,6 +75,7 @@ h1 {
 }
 h1 span { color: var(--accent); }
 .tagline { margin: 8px 0 0; font-family: var(--f-display); font-weight: 700; font-size: 18px; color: var(--accent); letter-spacing: .01em; }
+.doc-btn { text-decoration: none; }
 .tagline + .lead { margin-top: 2px; }
 .lead { margin: 6px 0 0; color: var(--muted); max-width: 52ch; }
 
@@ -182,6 +183,10 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
       <p class="tagline">Zoom and Print</p>
       <p class="lead">Bild scannen, vergrössern und auf mehrere A4-Seiten verteilen. Ergebnis ist ein PDF zum Ausdrucken und Zusammenkleben.</p>
     </div>
+    <a class="btn doc-btn" id="docBtn" href="ZAP-App_Benutzerdokumentation.pdf" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6v18h12V7z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h4"/></svg>
+      Anleitung (PDF)
+    </a>
   </header>
 
   <div class="layout">
@@ -487,7 +492,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
       lab.textContent = `${rowLabel(r)}${c + 1} · S. ${r * state.cols + c + 1}`;
       fig.append(cv, lab); wrap.append(fig);
     }
-    $("pagesCount").textContent = `${state.cols * state.rows} Seiten A4 ${state.orient === "p" ? "hoch" : "quer"}`;
+    $("pagesCount").textContent = `${state.cols * state.rows} ${state.cols * state.rows === 1 ? "Seite" : "Seiten"} A4 ${state.orient === "p" ? "hoch" : "quer"}`;
   }
 
   function renderStats() {
@@ -637,6 +642,20 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 
   let downloads = null;
   if (window.claude?.use) window.claude.use("downloads").then(d => { downloads = d; }).catch(() => {});
+
+  // Anleitung: auf GitHub normaler Link, in Claude über den Speichern-Dialog
+  $("docBtn").addEventListener("click", async e => {
+    if (!downloads) return;
+    e.preventDefault();
+    try {
+      const res = await fetch($("docBtn").getAttribute("href"));
+      if (!res.ok) throw new Error("fetch");
+      await downloads.save({ filename: "ZAP-App_Benutzerdokumentation.pdf", data: await res.blob() });
+    } catch (err) {
+      if (err?.code === "declined") return;
+      showToast("Die Anleitung konnte nicht geöffnet werden. Bitte später nochmals versuchen.", true);
+    }
+  });
 
   $("pdfBtn").onclick = async () => {
     if (!state.img) return;

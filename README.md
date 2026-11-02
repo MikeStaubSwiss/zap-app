@@ -27,9 +27,13 @@ Alles läuft direkt im Browser. Es wird nichts hochgeladen, das Bild bleibt auf 
 5. PDF öffnen und mit **100 % / «Tatsächliche Grösse»** drucken – nicht «An Seite anpassen», sonst stimmen die Klebelinien nicht.
 6. Blätter nach Code (A1, A2 …) zusammenlegen, an den gestrichelten Linien überlappen und kleben.
 
+## Anleitung
+
+Die ausführliche Benutzerdokumentation liegt als `ZAP-App_Benutzerdokumentation.pdf` neben `index.html`. Der Knopf «Anleitung (PDF)» oben in der App öffnet sie.
+
 ## Auf GitHub Pages veröffentlichen
 
-1. Neues Repository anlegen und `index.html` sowie `README.md` hochladen.
+1. Neues Repository anlegen und `index.html`, `ZAP-App_Benutzerdokumentation.pdf` sowie `README.md` hochladen.
 2. Unter **Settings → Pages** bei «Source» den Branch `main` und den Ordner `/ (root)` wählen.
 3. Nach kurzer Zeit ist die App unter `https://<benutzername>.github.io/<repository>/` erreichbar.
 
