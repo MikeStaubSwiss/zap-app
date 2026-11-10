@@ -45,3 +45,7 @@ Lokal genügt es, `index.html` im Browser zu öffnen.
 - PDF-Erzeugung mit [jsPDF](https://github.com/parallax/jsPDF) 2.5.1 (über cdnjs)
 - Schriften: Archivo, IBM Plex Sans, IBM Plex Mono (Google Fonts)
 - Helles und dunkles Design folgt der Systemeinstellung
+
+## Copyright
+
+© 2026 Mike Staub. Alle Rechte vorbehalten.
