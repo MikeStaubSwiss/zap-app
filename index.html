@@ -192,7 +192,8 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 .ov-meta { font: 12px var(--f-mono); color: var(--muted); font-variant-numeric: tabular-nums; }
 .ov-meta.warn { color: var(--warn); }
 .detail-label { font-family: var(--f-display); font-weight: 700; font-size: 15px; border-top: 1px solid var(--line); padding-top: 12px; overflow-wrap: anywhere; }
-.site-foot { border-top: 1px solid var(--line); padding-top: 14px; color: var(--muted); font-size: 13px; text-align: center; }
+.site-foot { border-top: 1px solid var(--line); padding-top: 14px; color: var(--muted); font-size: 13px; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 4px 10px; }
+.site-foot .ver { font: 500 12px var(--f-mono); letter-spacing: .04em; padding: 1px 8px; border: 1px solid var(--line); border-radius: 999px; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .toast { font-size: 14px; padding: 10px 12px; border-radius: 10px; background: var(--accent-soft); color: var(--fg); }
 .toast.err { background: rgba(242, 184, 75, .15); }
 .progress { height: 6px; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
@@ -365,7 +366,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
       </section>
     </main>
   </div>
-  <footer class="site-foot">© 2026 Mike Staub · ZAP-App – Zoom and Print</footer>
+  <footer class="site-foot"><span>© 2026 Mike Staub · Alle Rechte vorbehalten</span><span class="ver">Version 1.4</span></footer>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
