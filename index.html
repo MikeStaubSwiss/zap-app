@@ -166,6 +166,32 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 .sheet span { font: 500 12px var(--f-mono); color: var(--muted); text-align: center; }
 
 .export { display: grid; gap: 10px; }
+.img-list { display: flex; flex-wrap: wrap; gap: 10px; }
+.il-item { position: relative; }
+.il-sel { appearance: none; display: block; position: relative; width: 64px; height: 64px; padding: 0; border-radius: 10px; border: 2px solid var(--line); background: var(--surface-2); overflow: hidden; cursor: pointer; }
+.il-sel img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.il-sel[aria-pressed="true"] { border-color: var(--accent); }
+.il-no { position: absolute; left: 4px; bottom: 4px; font: 600 11px var(--f-mono); background: rgba(10, 20, 16, .72); color: #fff; border-radius: 6px; padding: 0 5px; }
+.il-del { appearance: none; position: absolute; top: -7px; right: -7px; width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font-size: 15px; line-height: 1; cursor: pointer; display: grid; place-items: center; }
+.il-del:hover { border-color: var(--warn); color: var(--warn); }
+.il-sel:focus-visible, .il-del:focus-visible, .ov-item:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.cm-row { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; align-items: center; }
+.all-btn { width: 100%; justify-content: center; }
+.all-btn[disabled] { cursor: not-allowed; }
+.hint.ok { color: var(--accent); margin: 0; }
+.hint.ok:empty { display: none; }
+.overview { display: grid; gap: 10px; }
+.ov-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.ov-head .hint { margin: 0; }
+.ov-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+.ov-item { appearance: none; text-align: left; border: 1px solid var(--line); background: var(--surface-2); color: var(--fg); border-radius: 12px; padding: 8px; display: grid; gap: 3px; cursor: pointer; font: inherit; min-width: 0; }
+.ov-item:hover { border-color: var(--accent); }
+.ov-item[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.ov-item canvas { width: 100%; height: auto; display: block; margin-bottom: 4px; }
+.ov-name { font-weight: 600; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ov-meta { font: 12px var(--f-mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.ov-meta.warn { color: var(--warn); }
+.detail-label { font-family: var(--f-display); font-weight: 700; font-size: 15px; border-top: 1px solid var(--line); padding-top: 12px; overflow-wrap: anywhere; }
 .site-foot { border-top: 1px solid var(--line); padding-top: 14px; color: var(--muted); font-size: 13px; text-align: center; }
 .toast { font-size: 14px; padding: 10px 12px; border-radius: 10px; background: var(--accent-soft); color: var(--fg); }
 .toast.err { background: rgba(242, 184, 75, .15); }
@@ -209,15 +235,19 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
           <input class="file-input" id="camInput" type="file" accept="image/*" capture="environment">
           <label class="btn" for="fileInput">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m3 16 5-5 4 4 3-3 6 6"/></svg>
-            Bild wählen
+            Bilder wählen
           </label>
-          <input class="file-input" id="fileInput" type="file" accept="image/*">
+          <input class="file-input" id="fileInput" type="file" accept="image/*" multiple>
           <button class="btn" id="rotateBtn" type="button" aria-label="Bild um 90 Grad drehen">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>
             Drehen
           </button>
         </div>
-        <p class="hint">«Scannen» öffnet auf dem Handy direkt die Kamera. Bild möglichst gerade und formatfüllend fotografieren.</p>
+        <div class="field" id="imgListBox" hidden>
+          <span class="label" id="imgCount">Bilder</span>
+          <div class="img-list" id="imgList"></div>
+        </div>
+        <p class="hint">«Scannen» öffnet auf dem Handy direkt die Kamera. Mit «Bilder wählen» lassen sich mehrere Bilder auf einmal laden.</p>
       </section>
 
       <section class="panel" aria-labelledby="h-teilen">
@@ -227,6 +257,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
           <div class="seg" id="modeSeg">
             <button type="button" data-v="pages" aria-pressed="true">Seitenanzahl</button>
             <button type="button" data-v="percent" aria-pressed="false">Prozent</button>
+            <button type="button" data-v="cm" aria-pressed="false">Zentimeter</button>
           </div>
         </div>
         <div class="field" id="percentBox" hidden>
@@ -237,6 +268,26 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
               <span class="pct-num"><input type="number" id="pctNum" min="25" max="1000" step="5" value="200" inputmode="numeric" aria-label="Prozent"> %</span></div>
             <input type="range" id="pctIn" min="25" max="1000" step="5" value="200">
           </div>
+        </div>
+        <div class="field" id="cmBox" hidden>
+          <span class="label">Gewünschte Grösse in cm</span>
+          <div class="chips" id="cmChips"></div>
+          <div class="cm-row">
+            <span class="pct-num"><input type="number" id="cmNum" min="1" max="200" step="0.5" value="30" inputmode="decimal" aria-label="Grösse in Zentimetern"> cm</span>
+            <div class="seg" id="cmSideSeg" aria-label="Gilt für">
+              <button type="button" data-v="w" aria-pressed="true">Breite</button>
+              <button type="button" data-v="h" aria-pressed="false">Höhe</button>
+              <button type="button" data-v="l" aria-pressed="false">Längere Seite</button>
+            </div>
+          </div>
+          <button class="btn primary all-btn" id="cmAllBtn" type="button">Auf alle Bilder anwenden</button>
+          <label class="check"><input type="checkbox" id="packIn" checked> Kleine Bilder gemeinsam auf A4-Seiten platzieren</label>
+          <div class="range" id="gapBox">
+            <div class="range-head"><label class="label" for="gapIn">Abstand zwischen Bildern</label><output id="gapOut">5 mm</output></div>
+            <input type="range" id="gapIn" min="2" max="20" step="1" value="5">
+          </div>
+          <p class="hint" id="cmAllHint">Für mehrere Bilder zuerst mit «Bilder wählen» mehrere Fotos laden.</p>
+          <p class="hint ok" id="cmAllNote" aria-live="polite"></p>
         </div>
         <div class="field" id="pagesBox">
           <span class="label">Anzahl A4-Seiten</span>
@@ -281,6 +332,15 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
     <main class="stage">
       <section class="poster-card" aria-labelledby="h-vorschau">
         <div class="pages-head"><h2 id="h-vorschau"><span class="step">3</span>Vorschau Poster</h2></div>
+        <div class="overview" id="overview" hidden>
+          <div class="ov-head"><span class="label">Alle Bilder</span><span class="hint" id="ovTotal"></span></div>
+          <div class="ov-grid" id="ovGrid"></div>
+        </div>
+        <div class="overview" id="sheetsBox" hidden>
+          <div class="ov-head"><span class="label">Sammelseiten</span><span class="hint" id="sheetsInfo"></span></div>
+          <div class="pages" id="sheetGrid"></div>
+        </div>
+        <div class="detail-label" id="detailLabel" hidden></div>
         <div class="stats" id="stats"></div>
         <div class="poster-box"><canvas id="posterCanvas" width="600" height="800" aria-label="Vorschau des Posters mit Seitenraster"></canvas></div>
         <p class="hint" id="qualityHint"></p>
@@ -293,6 +353,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
         </div>
         <div class="pages" id="pages"></div>
         <div class="export">
+          <p class="hint" id="pdfScope" hidden></p>
           <button class="btn primary big" id="pdfBtn" type="button">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
             PDF erstellen und speichern
@@ -311,15 +372,23 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 <script>
 (() => {
   const A4 = { w: 210, h: 297 };
-  const state = {
-    img: null, name: "Beispielbild", sample: true,
-    cols: 2, rows: 2, orient: "p", fit: "contain",
-    mode: "pages", percent: 200,
-    margin: 8, overlap: 10, guides: true
-  };
+  // Einstellungen pro Bild; state.<feld> zeigt immer auf das gerade gewählte Bild
+  const PER = ["img", "name", "sample", "cols", "rows", "orient", "fit", "mode", "percent", "cm", "cmSide"];
+  const DEF = { cols: 2, rows: 2, orient: "p", fit: "contain", mode: "pages", percent: 200, cm: 30, cmSide: "w" };
+  const state = { items: [], active: 0, margin: 8, overlap: 10, guides: true, pack: true, gap: 5 };
+  PER.forEach(k => Object.defineProperty(state, k, {
+    enumerable: true,
+    get() { const it = state.items[state.active]; return it ? it[k] : undefined; },
+    set(v) { const it = state.items[state.active]; if (it) it[k] = v; }
+  }));
+  const cur = () => state.items[state.active];
+  const merged = it => ({ ...state, ...it });
+
   const $ = id => document.getElementById(id);
   const fmt = (n, d = 1) => n.toLocaleString("de-CH", { minimumFractionDigits: d, maximumFractionDigits: d });
+  const fmtCm = n => fmt(n, n % 1 ? 1 : 0);
   const rowLabel = r => String.fromCharCode(65 + (r % 26)) + (r >= 26 ? Math.floor(r / 26) : "");
+  const SIDE_TXT = { w: "Breite", h: "Höhe", l: "längere Seite" };
 
   /* ---------- Beispielbild ---------- */
   function makeSample() {
@@ -345,7 +414,10 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
     x.fillStyle = "rgba(255,255,255,.85)"; x.font = "600 54px Archivo, Arial, sans-serif";
     x.fillText("Beispielbild", 70, 120);
     const img = new Image();
-    img.onload = () => { state.img = img; refreshAll(); };
+    img.onload = () => {
+      state.items = [{ ...DEF, img, name: "Beispielbild", sample: true }];
+      state.active = 0; refreshAll();
+    };
     img.src = c.toDataURL("image/jpeg", .92);
   }
 
@@ -353,127 +425,333 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
   function sheet(orient = state.orient) {
     return orient === "p" ? { w: A4.w, h: A4.h } : { w: A4.h, h: A4.w };
   }
+  function pxSize(s) {
+    return { iw: s.img ? s.img.naturalWidth : 4, ih: s.img ? s.img.naturalHeight : 3 };
+  }
+  // 100 % = Bild passt genau auf eine A4-Seite (beste Ausrichtung, innerhalb Druckrand)
+  function baseScale(s = state) {
+    const { iw, ih } = pxSize(s);
+    const a = A4.w - 2 * s.margin, b = A4.h - 2 * s.margin;
+    return Math.max(Math.min(a / iw, b / ih), Math.min(b / iw, a / ih));
+  }
+  // Feste Grösse (Prozent oder Zentimeter) in mm pro Pixel, sonst 0
+  function fixedScale(s = state) {
+    const { iw, ih } = pxSize(s);
+    if (s.mode === "percent") return baseScale(s) * s.percent / 100;
+    if (s.mode === "cm") {
+      const px = s.cmSide === "h" ? ih : s.cmSide === "l" ? Math.max(iw, ih) : iw;
+      return s.cm * 10 / px;
+    }
+    return 0;
+  }
   function layout(s = state) {
     const sh = sheet(s.orient);
     const pw = sh.w - 2 * s.margin, ph = sh.h - 2 * s.margin;
     const stepX = pw - s.overlap, stepY = ph - s.overlap;
     const W = s.cols * pw - (s.cols - 1) * s.overlap;
     const H = s.rows * ph - (s.rows - 1) * s.overlap;
-    const iw = s.img ? s.img.naturalWidth : 4, ih = s.img ? s.img.naturalHeight : 3;
+    const { iw, ih } = pxSize(s);
     const base = baseScale(s);
-    const sc = s.mode === "percent" ? base * s.percent / 100
-      : s.fit === "cover" ? Math.max(W / iw, H / ih) : Math.min(W / iw, H / ih);
+    const sc = fixedScale(s) || (s.fit === "cover" ? Math.max(W / iw, H / ih) : Math.min(W / iw, H / ih));
     const dw = iw * sc, dh = ih * sc;
     return { sh, pw, ph, stepX, stepY, W, H, ix: (W - dw) / 2, iy: (H - dh) / 2, dw, dh, iw, ih, pct: sc / base * 100 };
   }
-  // 100 % = Bild passt genau auf eine A4-Seite (beste Ausrichtung, innerhalb Druckrand)
-  function baseScale(s = state) {
-    const iw = s.img ? s.img.naturalWidth : 4, ih = s.img ? s.img.naturalHeight : 3;
-    const a = A4.w - 2 * s.margin, b = A4.h - 2 * s.margin;
-    return Math.max(Math.min(a / iw, b / ih), Math.min(b / iw, a / ih));
-  }
-  function gridForPercent(orient) {
+  function gridFor(s, orient) {
     const sh = sheet(orient);
     const pw = sh.w - 2 * state.margin, ph = sh.h - 2 * state.margin, o = state.overlap;
-    const sc = baseScale() * state.percent / 100;
-    const dw = state.img.naturalWidth * sc, dh = state.img.naturalHeight * sc;
+    const sc = fixedScale(s), { iw, ih } = pxSize(s);
+    const dw = iw * sc, dh = ih * sc;
     const cols = dw <= pw + 0.01 ? 1 : Math.ceil((dw - o) / (pw - o) - 1e-6);
     const rows = dh <= ph + 0.01 ? 1 : Math.ceil((dh - o) / (ph - o) - 1e-6);
     return { cols, rows, n: cols * rows, orient };
   }
-  function applyPercent(autoOrient) {
-    if (!state.img) return;
-    let g = gridForPercent(state.orient);
+  // Raster für feste Grössen berechnen (Prozent / Zentimeter)
+  function fixGrid(it, autoOrient) {
+    if (!it || !it.img || it.mode === "pages") return;
+    const s = merged(it);
+    let g = gridFor(s, it.orient);
     if (autoOrient) {
-      const other = gridForPercent(state.orient === "p" ? "l" : "p");
+      const other = gridFor(s, it.orient === "p" ? "l" : "p");
       if (other.n < g.n) g = other;
     }
-    state.cols = g.cols; state.rows = g.rows; state.orient = g.orient;
+    it.cols = g.cols; it.rows = g.rows; it.orient = g.orient;
   }
-  function setPercent(p) {
-    state.percent = Math.max(25, Math.min(1000, Math.round(+p || 100)));
-    state.mode = "percent"; applyPercent(true); refreshAll();
-  }
-  function bestGrid(n) {
+  function bestGrid(n, it = cur()) {
     let best = null;
     for (const orient of ["p", "l"]) {
       for (let c = 1; c <= n; c++) {
         if (n % c) continue;
         const r = n / c;
-        const L = layout({ ...state, cols: c, rows: r, orient, fit: "contain", mode: "pages" });
+        const L = layout({ ...merged(it), cols: c, rows: r, orient, fit: "contain", mode: "pages" });
         const used = L.dw * L.dh;
         if (!best || used > best.used + 1) best = { c, r, orient, used };
       }
     }
     return best;
   }
+  function fitItem(it) {
+    if (it.mode === "pages") { const g = bestGrid(it.cols * it.rows, it); it.cols = g.c; it.rows = g.r; it.orient = g.orient; }
+    else fixGrid(it, true);
+  }
+  function setPercent(p) {
+    state.percent = Math.max(25, Math.min(1000, Math.round(+p || 100)));
+    state.mode = "percent"; fixGrid(cur(), true); refreshAll();
+  }
+  function setCm(v) {
+    const n = parseFloat(String(v).replace(",", "."));
+    state.cm = Math.max(1, Math.min(200, Math.round((n || 30) * 2) / 2));
+    state.mode = "cm"; fixGrid(cur(), true);
+    $("cmAllNote").textContent = "";
+    refreshAll();
+  }
+  const dpiOf = L => L.iw / L.dw * 25.4;
+
+  /* ---------- Sammelseiten: kleine Bilder (cm-Modus) gemeinsam auf A4 ---------- */
+  let pack = { sheets: [], map: new Map(), orient: "p" };
+  function packFor(orient, cands) {
+    const sh = sheet(orient), pw = sh.w - 2 * state.margin, ph = sh.h - 2 * state.margin, g = state.gap;
+    const sheets = [], map = new Map();
+    for (const c of cands) {
+      if (c.w > pw + .01 || c.h > ph + .01) return null;
+      const put = (s, shelf, x, y) => { const p = { i: c.i, s, shelf, x, y, w: c.w, h: c.h }; sheets[s].items.push(p); map.set(c.i, p); };
+      let placed = false;
+      for (let s = 0; s < sheets.length && !placed; s++) {
+        const S = sheets[s];
+        for (const sf of S.shelves) {
+          if (sf.x + c.w <= pw + .01 && c.h <= sf.h + .01) { put(s, sf, sf.x, sf.y); sf.x += c.w + g; placed = true; break; }
+        }
+        if (!placed && S.nextY + c.h <= ph + .01) {
+          const sf = { y: S.nextY, h: c.h, x: c.w + g }; S.shelves.push(sf); put(s, sf, 0, S.nextY); S.nextY += c.h + g; placed = true;
+        }
+      }
+      if (!placed) {
+        const sf = { y: 0, h: c.h, x: c.w + g };
+        sheets.push({ shelves: [sf], nextY: c.h + g, items: [] }); put(sheets.length - 1, sf, 0, 0);
+      }
+    }
+    // Jede Reihe waagrecht zentrieren
+    sheets.forEach(S => {
+      S.shelves.forEach(sf => { sf.off = (pw - (sf.x - g)) / 2; });
+      S.items.forEach(p => { p.x += p.shelf.off; });
+      S.items.sort((a, b) => a.i - b.i);
+    });
+    return { sheets, map, orient };
+  }
+  function computePack() {
+    pack = { sheets: [], map: new Map(), orient: "p" };
+    if (!state.pack) return;
+    const cands = [];
+    state.items.forEach((it, i) => {
+      if (it.mode !== "cm" || !it.img) return;
+      const L = layout(merged(it));
+      cands.push({ i, w: L.dw, h: L.dh });
+    });
+    // nur Bilder, die ganz auf eine A4-Seite passen (hoch oder quer)
+    const fits = cands.filter(c => packFor("p", [c]) || packFor("l", [c]));
+    if (fits.length < 2) return;
+    fits.sort((a, b) => b.h - a.h || b.w - a.w);
+    const sp = packFor("p", fits.filter(c => packFor("p", [c])));
+    const sl = packFor("l", fits.filter(c => packFor("l", [c])));
+    // die Variante mit mehr Bildern und weniger Seiten gewinnt
+    const score = P => P ? P.map.size * 100 - P.sheets.length : -1;
+    const best = score(sl) > score(sp) ? sl : sp;
+    if (best && best.map.size >= 2) pack = best;
+  }
+  const packed = i => pack.map.get(i);
+  const pagesTxt = n => `${n} A4-${n === 1 ? "Seite" : "Seiten"}`;
+  const pagesTotal = () => state.items.reduce((a, it, i) => a + (packed(i) ? 0 : it.cols * it.rows), 0) + pack.sheets.length;
+
+  // Druckbereich einer Sammelseite zeichnen (ab 0,0 = innerhalb Druckrand)
+  function drawSheet(x, S, k, opts = {}) {
+    const sh = sheet(pack.orient), pw = sh.w - 2 * state.margin, ph = sh.h - 2 * state.margin;
+    x.fillStyle = "#fff"; x.fillRect(0, 0, pw * k, ph * k);
+    x.imageSmoothingQuality = "high";
+    for (const p of S.items) {
+      x.drawImage(state.items[p.i].img, p.x * k, p.y * k, p.w * k, p.h * k);
+      if (opts.guides) {
+        x.save(); x.strokeStyle = "rgba(0,0,0,.4)"; x.lineWidth = Math.max(.5, .12 * k);
+        x.strokeRect(p.x * k, p.y * k, p.w * k, p.h * k); x.restore();
+      }
+    }
+    if (opts.labels) {
+      const accent = accentColor();
+      for (const p of S.items) {
+        const on = p.i === opts.highlight;
+        if (on) { x.save(); x.strokeStyle = accent; x.lineWidth = 3; x.strokeRect(p.x * k - 2, p.y * k - 2, p.w * k + 4, p.h * k + 4); x.restore(); }
+        const fs = Math.max(10, Math.min(18, Math.min(p.w, p.h) * k * .22));
+        const cx = (p.x + p.w / 2) * k, cy = (p.y + p.h / 2) * k;
+        x.fillStyle = on ? accent : "rgba(10,20,16,.72)";
+        x.beginPath(); x.arc(cx, cy, fs * 1.05, 0, Math.PI * 2); x.fill();
+        x.fillStyle = "#fff"; x.font = `600 ${fs}px "IBM Plex Mono", monospace`; x.textAlign = "center"; x.textBaseline = "middle";
+        x.fillText(String(p.i + 1), cx, cy + 1);
+      }
+    }
+  }
+  // ganze A4-Seite mit Rand als Vorschau
+  function sheetCanvas(S, cssW, highlight) {
+    const sh = sheet(pack.orient), dpr = window.devicePixelRatio || 1;
+    const k = cssW * dpr / sh.w;
+    const cv = document.createElement("canvas");
+    cv.width = Math.round(sh.w * k); cv.height = Math.round(sh.h * k);
+    const x = cv.getContext("2d");
+    x.fillStyle = "#fff"; x.fillRect(0, 0, cv.width, cv.height);
+    x.save(); x.translate(state.margin * k, state.margin * k);
+    drawSheet(x, S, k, { guides: state.guides, labels: true, highlight });
+    x.restore();
+    x.strokeStyle = "rgba(0,0,0,.12)"; x.setLineDash([3, 3]);
+    x.strokeRect(state.margin * k, state.margin * k, (sh.w - 2 * state.margin) * k, (sh.h - 2 * state.margin) * k);
+    return cv;
+  }
 
   /* ---------- Kachel zeichnen ---------- */
-  function drawTile(ctx, c, r, k, L, withGuides) {
+  function drawTile(ctx, c, r, k, L, withGuides, it = state) {
     const x0 = c * L.stepX, y0 = r * L.stepY;
     ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, L.pw * k, L.ph * k);
     ctx.save();
     ctx.beginPath(); ctx.rect(0, 0, L.pw * k, L.ph * k); ctx.clip();
     ctx.imageSmoothingQuality = "high";
-    ctx.drawImage(state.img, (L.ix - x0) * k, (L.iy - y0) * k, L.dw * k, L.dh * k);
+    ctx.drawImage(it.img, (L.ix - x0) * k, (L.iy - y0) * k, L.dw * k, L.dh * k);
     ctx.restore();
     if (withGuides && state.overlap > 0) {
       ctx.save();
       ctx.strokeStyle = "rgba(0,0,0,.55)"; ctx.lineWidth = Math.max(1, .25 * k);
       ctx.setLineDash([2 * k, 1.5 * k]);
-      if (c < state.cols - 1) { const gx = (L.pw - state.overlap) * k; ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, L.ph * k); ctx.stroke(); }
-      if (r < state.rows - 1) { const gy = (L.ph - state.overlap) * k; ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(L.pw * k, gy); ctx.stroke(); }
+      if (c < it.cols - 1) { const gx = (L.pw - state.overlap) * k; ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, L.ph * k); ctx.stroke(); }
+      if (r < it.rows - 1) { const gy = (L.ph - state.overlap) * k; ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(L.pw * k, gy); ctx.stroke(); }
       ctx.restore();
     }
   }
 
   /* ---------- Vorschau ---------- */
+  const accentColor = () => getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || "#3fd49a";
+  function hexA(hex, a) {
+    const m = hex.replace("#", "");
+    if (m.length !== 6) return `rgba(63,212,154,${a})`;
+    return `rgba(${parseInt(m.slice(0, 2), 16)},${parseInt(m.slice(2, 4), 16)},${parseInt(m.slice(4, 6), 16)},${a})`;
+  }
+  // Poster mit Raster auf eine Leinwand zeichnen (ox/oy = Versatz, k = px pro mm)
+  function drawPoster(x, it, L, k, ox, oy, labels) {
+    const accent = accentColor();
+    x.save(); x.translate(ox, oy);
+    x.fillStyle = "#fff"; x.fillRect(0, 0, L.W * k, L.H * k);
+    x.save(); x.beginPath(); x.rect(0, 0, L.W * k, L.H * k); x.clip();
+    x.drawImage(it.img, L.ix * k, L.iy * k, L.dw * k, L.dh * k);
+    x.restore();
+    x.fillStyle = hexA(accent, .22);
+    for (let c = 1; c < it.cols; c++) x.fillRect(c * L.stepX * k, 0, state.overlap * k, L.H * k);
+    for (let r = 1; r < it.rows; r++) x.fillRect(0, r * L.stepY * k, L.W * k, state.overlap * k);
+    x.strokeStyle = accent; x.lineWidth = labels ? 1.5 : 1;
+    for (let r = 0; r < it.rows; r++) for (let c = 0; c < it.cols; c++) {
+      x.strokeRect(c * L.stepX * k + .75, r * L.stepY * k + .75, L.pw * k - 1.5, L.ph * k - 1.5);
+    }
+    if (labels) {
+      const fs = Math.max(11, Math.min(22, L.pw * k * .1));
+      x.font = `600 ${fs}px "IBM Plex Mono", monospace`; x.textAlign = "center"; x.textBaseline = "middle";
+      for (let r = 0; r < it.rows; r++) for (let c = 0; c < it.cols; c++) {
+        const cx = (c * L.stepX + L.pw / 2) * k, cy = (r * L.stepY + L.ph / 2) * k;
+        x.fillStyle = "rgba(10,20,16,.72)";
+        x.beginPath(); x.arc(cx, cy, fs * 1.25, 0, Math.PI * 2); x.fill();
+        x.fillStyle = "#fff"; x.fillText(rowLabel(r) + (c + 1), cx, cy + 1);
+      }
+    }
+    x.restore();
+  }
   function renderPoster() {
-    const L = layout();
     const cv = $("posterCanvas");
+    const pk = packed(state.active);
+    if (pk) {
+      const box = cv.parentElement.getBoundingClientRect();
+      const sh = sheet(pack.orient);
+      const maxW = Math.max(200, box.width - 36), maxH = Math.max(320, Math.min(window.innerHeight * .62, 760));
+      const cssW = Math.min(maxW, maxH * sh.w / sh.h);
+      const src = sheetCanvas(pack.sheets[pk.s], cssW, state.active);
+      cv.width = src.width; cv.height = src.height; cv.style.width = Math.round(cssW) + "px";
+      cv.getContext("2d").drawImage(src, 0, 0);
+      return;
+    }
+    const L = layout();
     const box = cv.parentElement.getBoundingClientRect();
     const maxW = Math.max(200, box.width - 36), maxH = Math.max(320, Math.min(window.innerHeight * .62, 760));
-    const pad = 0;
     const k = Math.min(maxW / L.W, maxH / L.H);
     const dpr = window.devicePixelRatio || 1;
     cv.width = Math.round(L.W * k * dpr); cv.height = Math.round(L.H * k * dpr);
     cv.style.width = Math.round(L.W * k) + "px";
     const x = cv.getContext("2d");
     x.setTransform(dpr, 0, 0, dpr, 0, 0);
-    x.fillStyle = "#fff"; x.fillRect(0, 0, L.W * k, L.H * k);
-    x.save(); x.beginPath(); x.rect(0, 0, L.W * k, L.H * k); x.clip();
-    x.drawImage(state.img, L.ix * k, L.iy * k, L.dw * k, L.dh * k);
-    x.restore();
-    // Überlappungen
-    const accent = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || "#3fd49a";
-    x.fillStyle = hexA(accent, .22);
-    for (let c = 1; c < state.cols; c++) x.fillRect(c * L.stepX * k, 0, state.overlap * k, L.H * k);
-    for (let r = 1; r < state.rows; r++) x.fillRect(0, r * L.stepY * k, L.W * k, state.overlap * k);
-    // Seitengrenzen
-    x.strokeStyle = accent; x.lineWidth = 1.5;
-    for (let r = 0; r < state.rows; r++) for (let c = 0; c < state.cols; c++) {
-      x.strokeRect(c * L.stepX * k + .75, r * L.stepY * k + .75, L.pw * k - 1.5, L.ph * k - 1.5);
-    }
-    // Beschriftung
-    const fs = Math.max(11, Math.min(22, L.pw * k * .1));
-    x.font = `600 ${fs}px "IBM Plex Mono", monospace`; x.textAlign = "center"; x.textBaseline = "middle";
-    for (let r = 0; r < state.rows; r++) for (let c = 0; c < state.cols; c++) {
-      const cx = (c * L.stepX + L.pw / 2) * k, cy = (r * L.stepY + L.ph / 2) * k;
-      const t = rowLabel(r) + (c + 1);
-      x.fillStyle = "rgba(10,20,16,.72)";
-      x.beginPath(); x.arc(cx, cy, fs * 1.25, 0, Math.PI * 2); x.fill();
-      x.fillStyle = "#fff"; x.fillText(t, cx, cy + 1);
-    }
+    drawPoster(x, state, L, k, 0, 0, true);
   }
-  function hexA(hex, a) {
-    const m = hex.replace("#", "");
-    if (m.length !== 6) return `rgba(63,212,154,${a})`;
-    return `rgba(${parseInt(m.slice(0, 2), 16)},${parseInt(m.slice(2, 4), 16)},${parseInt(m.slice(4, 6), 16)},${a})`;
+
+  function renderOverview() {
+    const n = state.items.length;
+    $("overview").hidden = n < 2;
+    $("detailLabel").hidden = n < 2;
+    if (n < 2) return;
+    const ns = pack.sheets.length;
+    $("ovTotal").textContent = `${n} Bilder · ${pagesTxt(pagesTotal())} total${ns ? ` · davon ${ns} ${ns === 1 ? "Sammelseite" : "Sammelseiten"}` : ""}`;
+    $("detailLabel").textContent = `Bild ${state.active + 1}: ${state.name}`;
+    const grid = $("ovGrid");
+    grid.innerHTML = "";
+    state.items.forEach((it, i) => {
+      const L = layout(merged(it));
+      const dpi = dpiOf(L);
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "ov-item";
+      b.setAttribute("aria-pressed", String(i === state.active));
+      b.setAttribute("aria-label", `Bild ${i + 1} auswählen`);
+      const cv = document.createElement("canvas");
+      cv.width = 280; cv.height = 220;
+      const x = cv.getContext("2d");
+      const k = Math.min((cv.width - 16) / L.W, (cv.height - 16) / L.H);
+      drawPoster(x, it, L, k, (cv.width - L.W * k) / 2, (cv.height - L.H * k) / 2, false);
+      const name = document.createElement("span"); name.className = "ov-name";
+      name.textContent = `${i + 1} · ${it.name}`;
+      const size = document.createElement("span"); size.className = "ov-meta";
+      size.textContent = `${fmt(Math.min(L.dw, L.W) / 10)} × ${fmt(Math.min(L.dh, L.H) / 10)} cm`;
+      const pages = document.createElement("span"); pages.className = "ov-meta" + (dpi < 100 ? " warn" : "");
+      const np = it.cols * it.rows, pk = packed(i);
+      pages.textContent = pk ? `Sammelseite ${pk.s + 1} · ${Math.round(dpi)} dpi` : `${np} ${np === 1 ? "Seite" : "Seiten"} · ${Math.round(dpi)} dpi`;
+      b.append(cv, name, size, pages);
+      b.addEventListener("click", () => { state.active = i; refreshAll(); });
+      grid.append(b);
+    });
+  }
+
+  function renderSheets() {
+    const box = $("sheetsBox"), ns = pack.sheets.length;
+    box.hidden = !ns;
+    if (!ns) return;
+    const n = pack.map.size;
+    $("sheetsInfo").textContent = `${n} Bilder auf ${ns} ${ns === 1 ? "Seite" : "Seiten"} A4 ${pack.orient === "p" ? "hoch" : "quer"}`;
+    const grid = $("sheetGrid");
+    grid.style.setProperty("--cols", window.innerWidth < 520 ? 2 : 4);
+    grid.innerHTML = "";
+    const w = Math.min(240, Math.max(110, grid.getBoundingClientRect().width / Math.min(ns, 4) - 12));
+    pack.sheets.forEach((S, s) => {
+      const fig = document.createElement("div"); fig.className = "sheet";
+      const cv = sheetCanvas(S, w, -1);
+      cv.setAttribute("aria-label", `Sammelseite ${s + 1}`);
+      const lab = document.createElement("span");
+      lab.textContent = `Sammelseite ${s + 1} · Bild ${S.items.map(p => p.i + 1).join(", ")}`;
+      fig.append(cv, lab); grid.append(fig);
+    });
   }
 
   function renderPages() {
-    const L = layout();
     const wrap = $("pages");
+    const multi0 = state.items.length > 1, pk = packed(state.active);
+    $("pdfScope").hidden = !multi0;
+    if (multi0) $("pdfScope").textContent = `Das PDF enthält alle ${state.items.length} Bilder mit zusammen ${pagesTxt(pagesTotal())}${pack.sheets.length ? ", zuerst die Sammelseiten" : ""}. Oben ist nur das gewählte Bild zu sehen.`;
+    if (pk) {
+      wrap.style.setProperty("--cols", 2);
+      wrap.innerHTML = "";
+      const fig = document.createElement("div"); fig.className = "sheet";
+      const cv = sheetCanvas(pack.sheets[pk.s], Math.min(260, Math.max(120, wrap.getBoundingClientRect().width / 2 - 12)), state.active);
+      const lab = document.createElement("span"); lab.textContent = `Sammelseite ${pk.s + 1}`;
+      fig.append(cv, lab); wrap.append(fig);
+      $("pagesCount").textContent = `Bild ${state.active + 1}: auf Sammelseite ${pk.s + 1}`;
+      return;
+    }
+    const L = layout();
     wrap.style.setProperty("--cols", Math.min(state.cols, window.innerWidth < 520 ? 3 : 6));
     wrap.innerHTML = "";
     const thumbW = Math.min(260, Math.max(90, wrap.getBoundingClientRect().width / Math.min(state.cols, 6)));
@@ -494,25 +772,29 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
       lab.textContent = `${rowLabel(r)}${c + 1} · S. ${r * state.cols + c + 1}`;
       fig.append(cv, lab); wrap.append(fig);
     }
-    $("pagesCount").textContent = `${state.cols * state.rows} ${state.cols * state.rows === 1 ? "Seite" : "Seiten"} A4 ${state.orient === "p" ? "hoch" : "quer"}`;
+    const n = state.cols * state.rows, multi = state.items.length > 1;
+    $("pagesCount").textContent = `${multi ? `Bild ${state.active + 1}: ` : ""}${n} ${n === 1 ? "Seite" : "Seiten"} A4 ${state.orient === "p" ? "hoch" : "quer"}`;
   }
 
   function renderStats() {
     const L = layout();
     const visW = Math.min(L.dw, L.W), visH = Math.min(L.dh, L.H);
-    const pxPerMm = state.fit === "cover" ? L.iw / L.dw : L.iw / L.dw;
-    const dpi = pxPerMm * 25.4;
+    const dpi = dpiOf(L);
     const s = $("stats");
-    s.innerHTML = `
-      <div class="stat"><div class="label">Postergrösse</div><div class="v">${fmt(L.W / 10)} × ${fmt(L.H / 10)} <small>cm</small></div></div>
+    const pk = packed(state.active);
+    s.innerHTML = (pk
+      ? `<div class="stat"><div class="label">Gedruckt auf</div><div class="v">Sammelseite ${pk.s + 1}</div></div>`
+      : `<div class="stat"><div class="label">Postergrösse</div><div class="v">${fmt(L.W / 10)} × ${fmt(L.H / 10)} <small>cm</small></div></div>`) + `
       <div class="stat"><div class="label">Bildfläche</div><div class="v">${fmt(visW / 10)} × ${fmt(visH / 10)} <small>cm</small></div></div>
       <div class="stat"><div class="label">Vergrösserung</div><div class="v">${Math.round(L.pct)} <small>%</small></div></div>
       <div class="stat ${dpi < 100 ? "warn" : ""}"><div class="label">Druckauflösung</div><div class="v">${Math.round(dpi)} <small>dpi</small></div></div>`;
     const h = $("qualityHint");
     if (dpi < 70) { h.className = "hint warn"; h.textContent = "Das Bild hat für diese Grösse zu wenig Pixel und wird deutlich unscharf. Weniger Seiten wählen oder mit höherer Auflösung scannen."; }
     else if (dpi < 100) { h.className = "hint warn"; h.textContent = "Leicht unscharf aus der Nähe, aus etwas Abstand gut. Ab etwa 100 dpi wirkt es sauber."; }
+    else if (pk) { h.className = "hint"; h.textContent = `Dieses Bild teilt sich Sammelseite ${pk.s + 1} mit anderen Bildern. Nach dem Drucken entlang der feinen Linien ausschneiden.`; }
     else { h.className = "hint"; h.textContent = "Grün schraffiert ist die Klebezugabe: dort überlappen sich die Blätter. Die Buchstaben-Zahl-Codes stehen auch auf dem Ausdruck."; }
-    $("imgMeta").textContent = `${L.iw} × ${L.ih} px`;
+    const multi = state.items.length > 1;
+    $("imgMeta").textContent = `${L.iw} × ${L.ih} px${multi ? ` · Bild ${state.active + 1} von ${state.items.length}` : ""}`;
   }
 
   function renderThumb() {
@@ -523,18 +805,54 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
     x.drawImage(state.img, (112 - w) / 2, (112 - h) / 2, w, h);
   }
 
+  function renderImgList() {
+    const n = state.items.length, list = $("imgList");
+    $("imgListBox").hidden = n < 2;
+    if (n < 2) return;
+    $("imgCount").textContent = `${n} Bilder geladen`;
+    list.innerHTML = "";
+    state.items.forEach((it, i) => {
+      const wrap = document.createElement("div"); wrap.className = "il-item";
+      const sel = document.createElement("button");
+      sel.type = "button"; sel.className = "il-sel";
+      sel.setAttribute("aria-pressed", String(i === state.active));
+      sel.setAttribute("aria-label", `Bild ${i + 1} auswählen: ${it.name}`);
+      sel.title = it.name;
+      const im = document.createElement("img"); im.src = it.img.src; im.alt = "";
+      const no = document.createElement("span"); no.className = "il-no"; no.textContent = i + 1;
+      sel.append(im, no);
+      sel.addEventListener("click", () => { state.active = i; refreshAll(); });
+      const del = document.createElement("button");
+      del.type = "button"; del.className = "il-del"; del.textContent = "×";
+      del.setAttribute("aria-label", `Bild ${i + 1} entfernen`);
+      del.addEventListener("click", () => removeItem(i));
+      wrap.append(sel, del); list.append(wrap);
+    });
+  }
+
   function renderControls() {
     $("colsOut").textContent = state.cols; $("rowsOut").textContent = state.rows;
     const n = state.cols * state.rows;
-    document.querySelectorAll("#chips .chip").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.n === n)));
+    document.querySelectorAll("#chips .chip").forEach(b => b.setAttribute("aria-pressed", String(state.mode === "pages" && +b.dataset.n === n)));
     document.querySelectorAll("#orientSeg button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === state.orient)));
     document.querySelectorAll("#fitSeg button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === state.fit)));
     document.querySelectorAll("#modeSeg button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === state.mode)));
-    const pm = state.mode === "percent";
-    $("percentBox").hidden = !pm; $("pagesBox").hidden = pm; $("fitBox").hidden = pm;
+    const pm = state.mode === "percent", cm = state.mode === "cm";
+    $("percentBox").hidden = !pm; $("cmBox").hidden = !cm;
+    $("pagesBox").hidden = pm || cm; $("fitBox").hidden = pm || cm;
     document.querySelectorAll("#pctChips .chip").forEach(b => b.setAttribute("aria-pressed", String(pm && +b.dataset.p === state.percent)));
     if (document.activeElement !== $("pctNum")) $("pctNum").value = state.percent;
     $("pctIn").value = state.percent;
+    // Zentimeter
+    document.querySelectorAll("#cmChips .chip").forEach(b => b.setAttribute("aria-pressed", String(cm && +b.dataset.cm === state.cm)));
+    document.querySelectorAll("#cmSideSeg button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === state.cmSide)));
+    if (document.activeElement !== $("cmNum")) $("cmNum").value = state.cm;
+    const total = state.items.length, all = $("cmAllBtn");
+    all.disabled = total < 2;
+    all.textContent = total < 2 ? "Auf alle Bilder anwenden"
+      : `Alle ${total} Bilder auf ${fmtCm(state.cm)} cm ${state.cmSide === "l" ? "(längere Seite)" : SIDE_TXT[state.cmSide]}`;
+    $("cmAllHint").hidden = total > 1;
+    $("packIn").checked = state.pack; $("gapBox").hidden = !state.pack; $("gapOut").textContent = state.gap + " mm";
     $("marginOut").textContent = state.margin + " mm"; $("overlapOut").textContent = state.overlap + " mm";
     const name = $("imgName");
     name.textContent = state.name;
@@ -544,9 +862,12 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
   let raf = 0;
   function refreshAll() {
     if (!state.img) return;
-    if (state.mode === "percent") applyPercent(false);
+    state.items.forEach(it => fixGrid(it, false));
+    computePack();
     cancelAnimationFrame(raf);
-    raf = requestAnimationFrame(() => { renderControls(); renderThumb(); renderStats(); renderPoster(); renderPages(); });
+    raf = requestAnimationFrame(() => {
+      renderControls(); renderThumb(); renderImgList(); renderStats(); renderOverview(); renderSheets(); renderPoster(); renderPages();
+    });
   }
 
   /* ---------- Bedienung ---------- */
@@ -574,67 +895,120 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
   $("pctIn").oninput = e => setPercent(e.target.value);
   $("pctNum").onchange = e => setPercent(e.target.value);
   $("pctNum").onkeydown = e => { if (e.key === "Enter") setPercent(e.target.value); };
+  [10, 15, 20, 30, 50, 75, 100].forEach(v => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "chip"; b.dataset.cm = v; b.textContent = v;
+    b.setAttribute("aria-pressed", "false");
+    b.addEventListener("click", () => setCm(v));
+    $("cmChips").append(b);
+  });
+  $("cmNum").onchange = e => setCm(e.target.value);
+  $("cmNum").onkeydown = e => { if (e.key === "Enter") setCm(e.target.value); };
+  document.querySelectorAll("#cmSideSeg button").forEach(b => b.onclick = () => {
+    state.cmSide = b.dataset.v; state.mode = "cm"; fixGrid(cur(), true);
+    $("cmAllNote").textContent = ""; refreshAll();
+  });
+  $("cmAllBtn").onclick = () => {
+    const { cm, cmSide } = state;
+    state.items.forEach(it => { it.mode = "cm"; it.cm = cm; it.cmSide = cmSide; fixGrid(it, true); });
+    refreshAll();
+    const ns = pack.sheets.length;
+    $("cmAllNote").textContent = `Erledigt: Alle ${state.items.length} Bilder haben jetzt ${fmtCm(cm)} cm ${SIDE_TXT[cmSide]}. Zusammen ${pagesTxt(pagesTotal())}${ns ? `, davon ${ns} ${ns === 1 ? "Sammelseite" : "Sammelseiten"} mit mehreren Bildern` : ""}.`;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    setTimeout(() => $("h-vorschau").scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" }), 60);
+  };
   document.querySelectorAll("#modeSeg button").forEach(b => b.onclick = () => {
-    if (b.dataset.v === state.mode) return;
-    if (b.dataset.v === "percent") {
-      state.percent = Math.max(25, Math.min(1000, Math.round(layout().pct / 5) * 5));
-      state.mode = "percent"; applyPercent(false);
-    } else state.mode = "pages";
+    const v = b.dataset.v;
+    if (v === state.mode) return;
+    const L = layout();
+    if (v === "percent") state.percent = Math.max(25, Math.min(1000, Math.round(L.pct / 5) * 5));
+    if (v === "cm") {
+      const mm = state.cmSide === "h" ? L.dh : state.cmSide === "l" ? Math.max(L.dw, L.dh) : L.dw;
+      state.cm = Math.max(1, Math.min(200, Math.round(mm / 5) / 2));
+    }
+    state.mode = v; fixGrid(cur(), false);
     refreshAll();
   });
   document.querySelectorAll("#orientSeg button").forEach(b => b.onclick = () => { state.orient = b.dataset.v; refreshAll(); });
   document.querySelectorAll("#fitSeg button").forEach(b => b.onclick = () => { state.fit = b.dataset.v; refreshAll(); });
   $("marginIn").oninput = e => { state.margin = +e.target.value; refreshAll(); };
+  $("packIn").onchange = e => { state.pack = e.target.checked; refreshAll(); };
+  $("gapIn").oninput = e => { state.gap = +e.target.value; refreshAll(); };
   $("overlapIn").oninput = e => { state.overlap = +e.target.value; refreshAll(); };
   $("guidesIn").onchange = e => { state.guides = e.target.checked; refreshAll(); };
 
-  function loadFile(file) {
-    if (!file) return;
-    const url = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => {
-      // Sehr grosse Fotos begrenzen, damit das Handy nicht ausgeht
-      const max = 7000, big = Math.max(img.naturalWidth, img.naturalHeight);
-      if (big > max) {
+  /* ---------- Bilder laden ---------- */
+  function readImage(file) {
+    return new Promise(resolve => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        // Sehr grosse Fotos begrenzen, damit das Handy nicht ausgeht
+        const max = 7000, big = Math.max(img.naturalWidth, img.naturalHeight);
+        if (big <= max) return resolve(img);
         const s = max / big, c = document.createElement("canvas");
         c.width = Math.round(img.naturalWidth * s); c.height = Math.round(img.naturalHeight * s);
         c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
-        const im2 = new Image(); im2.onload = () => setImg(im2, file.name); im2.src = c.toDataURL("image/jpeg", .93);
         URL.revokeObjectURL(url);
-      } else setImg(img, file.name);
-    };
-    img.onerror = () => { showToast("Dieses Bildformat kann der Browser nicht öffnen. Bitte als JPG oder PNG speichern und erneut wählen.", true); URL.revokeObjectURL(url); };
-    img.src = url;
+        const im2 = new Image();
+        im2.onload = () => resolve(im2);
+        im2.onerror = () => resolve(null);
+        im2.src = c.toDataURL("image/jpeg", .93);
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
+      img.src = url;
+    });
   }
-  function setImg(img, name) {
-    state.img = img; state.name = name || "Scan"; state.sample = false;
-    if (state.mode === "percent") applyPercent(true);
-    else { const g = bestGrid(state.cols * state.rows); state.cols = g.c; state.rows = g.r; state.orient = g.orient; }
-    $("toast").hidden = true; refreshAll();
+  async function addFiles(fileList) {
+    const files = [...(fileList || [])].filter(f => !f.type || f.type.startsWith("image/"));
+    if (!files.length) return;
+    const c = cur();
+    const tpl = c ? { cols: c.cols, rows: c.rows, orient: c.orient, fit: c.fit, mode: c.mode, percent: c.percent, cm: c.cm, cmSide: c.cmSide } : { ...DEF };
+    const added = []; let failed = 0;
+    if (files.length > 1) showToast(`${files.length} Bilder werden geladen …`);
+    for (const f of files) {
+      const img = await readImage(f);
+      if (!img) { failed++; continue; }
+      const it = { ...DEF, ...tpl, img, name: f.name || "Scan", sample: false };
+      added.push(it);
+    }
+    if (added.length) {
+      if (state.items.length === 1 && state.items[0].sample) state.items = [];
+      const start = state.items.length;
+      state.items.push(...added);
+      added.forEach(fitItem);
+      state.active = start;
+    }
+    if (failed) showToast(`${failed === 1 ? "Eine Datei konnte" : failed + " Dateien konnten"} nicht geöffnet werden. Bitte als JPG oder PNG speichern und erneut wählen.`, true);
+    else $("toast").hidden = true;
+    refreshAll();
   }
-  $("camInput").onchange = e => { loadFile(e.target.files[0]); e.target.value = ""; };
-  $("fileInput").onchange = e => { loadFile(e.target.files[0]); e.target.value = ""; };
+  function removeItem(i) {
+    state.items.splice(i, 1);
+    if (!state.items.length) { makeSample(); return; }
+    if (state.active >= state.items.length) state.active = state.items.length - 1;
+    else if (state.active > i) state.active--;
+    refreshAll();
+  }
+  $("camInput").onchange = e => { addFiles(e.target.files); e.target.value = ""; };
+  $("fileInput").onchange = e => { addFiles(e.target.files); e.target.value = ""; };
 
   $("rotateBtn").onclick = () => {
-    if (!state.img) return;
+    const it = cur();
+    if (!it || !it.img) return;
     const c = document.createElement("canvas");
-    c.width = state.img.naturalHeight; c.height = state.img.naturalWidth;
+    c.width = it.img.naturalHeight; c.height = it.img.naturalWidth;
     const x = c.getContext("2d");
-    x.translate(c.width, 0); x.rotate(Math.PI / 2); x.drawImage(state.img, 0, 0);
+    x.translate(c.width, 0); x.rotate(Math.PI / 2); x.drawImage(it.img, 0, 0);
     const img = new Image();
-    img.onload = () => {
-      state.img = img;
-      if (state.mode === "percent") applyPercent(true);
-      else { const g = bestGrid(state.cols * state.rows); state.cols = g.c; state.rows = g.r; state.orient = g.orient; }
-      refreshAll();
-    };
+    img.onload = () => { it.img = img; fitItem(it); refreshAll(); };
     img.src = c.toDataURL("image/jpeg", .93);
   };
 
-  // Bild auch per Drag & Drop oder Einfügen
+  // Bilder auch per Drag & Drop oder Einfügen
   window.addEventListener("dragover", e => e.preventDefault());
-  window.addEventListener("drop", e => { e.preventDefault(); const f = [...(e.dataTransfer?.files || [])].find(f => f.type.startsWith("image/")); if (f) loadFile(f); });
-  window.addEventListener("paste", e => { const f = [...(e.clipboardData?.files || [])].find(f => f.type.startsWith("image/")); if (f) loadFile(f); });
+  window.addEventListener("drop", e => { e.preventDefault(); addFiles(e.dataTransfer?.files); });
+  window.addEventListener("paste", e => { if (e.clipboardData?.files?.length) addFiles(e.clipboardData.files); });
 
   let rt = 0;
   window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(refreshAll, 120); });
@@ -666,30 +1040,64 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
     const bar = $("progressBar"); $("progress").hidden = false; bar.style.width = "0%";
     $("toast").hidden = true;
     try {
-      const L = layout();
       const { jsPDF } = window.jspdf;
-      const doc = new jsPDF({ orientation: state.orient === "p" ? "portrait" : "landscape", unit: "mm", format: "a4", compress: true });
-      // Auflösung: nicht höher als das Bild hergibt, max. 200 dpi
-      const srcPxPerMm = L.iw / L.dw;
-      const k = Math.max(4, Math.min(200 / 25.4, srcPxPerMm * 1.1));
-      const cv = document.createElement("canvas");
-      cv.width = Math.round(L.pw * k); cv.height = Math.round(L.ph * k);
-      const x = cv.getContext("2d");
-      const total = state.cols * state.rows; let i = 0;
-      for (let r = 0; r < state.rows; r++) for (let c = 0; c < state.cols; c++) {
-        if (i > 0) doc.addPage("a4", state.orient === "p" ? "portrait" : "landscape");
-        drawTile(x, c, r, k, L, state.guides);
-        doc.addImage(cv.toDataURL("image/jpeg", .9), "JPEG", state.margin, state.margin, L.pw, L.ph, undefined, "FAST");
-        if (state.guides && state.margin >= 5) {
-          doc.setFontSize(7); doc.setTextColor(110);
-          doc.text(`${rowLabel(r)}${c + 1}   Seite ${i + 1}/${total}   Zeile ${rowLabel(r)}, Spalte ${c + 1}`, state.margin, state.margin - 1.8);
+      const items = state.items, multi = items.length > 1;
+      const total = pagesTotal();
+      let doc = null, i = 0;
+      // 1. Sammelseiten
+      const sh = sheet(pack.orient), spw = sh.w - 2 * state.margin, sph = sh.h - 2 * state.margin;
+      const sOrient = pack.orient === "p" ? "portrait" : "landscape";
+      for (let s = 0; s < pack.sheets.length; s++) {
+        const S = pack.sheets[s];
+        const need = Math.max(...S.items.map(p => state.items[p.i].img.naturalWidth / p.w)) * 1.1;
+        const k = Math.max(4, Math.min(200 / 25.4, need));
+        const cv = document.createElement("canvas");
+        cv.width = Math.round(spw * k); cv.height = Math.round(sph * k);
+        drawSheet(cv.getContext("2d"), S, k, { guides: state.guides });
+        if (!doc) doc = new jsPDF({ orientation: sOrient, unit: "mm", format: "a4", compress: true });
+        else doc.addPage("a4", sOrient);
+        doc.addImage(cv.toDataURL("image/jpeg", .9), "JPEG", state.margin, state.margin, spw, sph, undefined, "FAST");
+        if (state.guides) {
+          doc.setTextColor(110);
+          if (state.margin >= 5) { doc.setFontSize(7); doc.text(`Sammelseite ${s + 1}   Seite ${i + 1}/${total}`, state.margin, state.margin - 1.8); }
+          doc.setFontSize(6);
+          for (const p of S.items) {
+            if (p.y + p.h + 3 > sph) continue;
+            doc.text(`Bild ${p.i + 1} · ${fmt(p.w / 10)} × ${fmt(p.h / 10)} cm`, state.margin + p.x, state.margin + p.y + p.h + 2.4);
+          }
         }
+        cv.width = cv.height = 0;
         i++; bar.style.width = Math.round(i / total * 100) + "%";
         await new Promise(res => setTimeout(res, 0));
       }
+      // 2. Bilder, die eigene Seiten brauchen
+      for (let n = 0; n < items.length; n++) {
+        if (packed(n)) continue;
+        const it = items[n], L = layout(merged(it));
+        const orient = it.orient === "p" ? "portrait" : "landscape";
+        // Auflösung: nicht höher als das Bild hergibt, max. 200 dpi
+        const k = Math.max(4, Math.min(200 / 25.4, (L.iw / L.dw) * 1.1));
+        const cv = document.createElement("canvas");
+        cv.width = Math.round(L.pw * k); cv.height = Math.round(L.ph * k);
+        const x = cv.getContext("2d");
+        for (let r = 0; r < it.rows; r++) for (let c = 0; c < it.cols; c++) {
+          if (!doc) doc = new jsPDF({ orientation: orient, unit: "mm", format: "a4", compress: true });
+          else doc.addPage("a4", orient);
+          drawTile(x, c, r, k, L, state.guides, it);
+          doc.addImage(cv.toDataURL("image/jpeg", .9), "JPEG", state.margin, state.margin, L.pw, L.ph, undefined, "FAST");
+          if (state.guides && state.margin >= 5) {
+            doc.setFontSize(7); doc.setTextColor(110);
+            const pre = multi ? `Bild ${n + 1} · ` : "";
+            doc.text(`${pre}${rowLabel(r)}${c + 1}   Seite ${i + 1}/${total}   Zeile ${rowLabel(r)}, Spalte ${c + 1}`, state.margin, state.margin - 1.8);
+          }
+          i++; bar.style.width = Math.round(i / total * 100) + "%";
+          await new Promise(res => setTimeout(res, 0));
+        }
+        cv.width = cv.height = 0;
+      }
       const blob = doc.output("blob");
       const base = (state.sample ? "zoom-beispiel" : state.name.replace(/\.[^.]+$/, "")).replace(/[^\w\-äöüÄÖÜ]+/g, "-").slice(0, 60) || "zoom";
-      const fname = `${base}_${state.cols}x${state.rows}_A4.pdf`;
+      const fname = multi ? `ZAP_${items.length}-Bilder_${total}-Seiten_A4.pdf` : `${base}_${state.cols}x${state.rows}_A4.pdf`;
       if (!downloads) {
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
@@ -700,7 +1108,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
       }
       try {
         await downloads.save({ filename: fname, data: blob });
-        showToast(`PDF gespeichert (${total} Seiten, ${fmt(blob.size / 1048576)} MB). Jetzt öffnen und mit 100 % drucken.`);
+        showToast(`PDF gespeichert (${multi ? items.length + " Bilder, " : ""}${total} Seiten, ${fmt(blob.size / 1048576)} MB). Jetzt öffnen und mit 100 % drucken.`);
       } catch (err) {
         if (err?.code === "declined") showToast("Speichern abgebrochen.", true);
         else if (err?.code === "rate_limited") showToast("Es ist schon ein Speicherdialog offen. Kurz warten und nochmals tippen.", true);

@@ -6,11 +6,14 @@ Alles läuft direkt im Browser. Es wird nichts hochgeladen, das Bild bleibt auf 
 
 ## Funktionen
 
-- **Bild scannen** mit der Handykamera oder aus der Galerie wählen (auch Drag & Drop und Einfügen)
+- **Bild scannen** mit der Handykamera oder **mehrere Bilder** auf einmal aus der Galerie wählen (auch Drag & Drop und Einfügen)
 - **Drehen** in 90°-Schritten
 - **Grösse festlegen** über
   - **Seitenanzahl** (2–20 Seiten, Raster und Ausrichtung werden automatisch optimiert) oder Spalten × Zeilen von Hand
   - **Prozent** (25–1000 %, 100 % = Bild füllt genau eine A4-Seite); die nötige Seitenzahl wird berechnet
+  - **Zentimeter** (Breite, Höhe oder längere Seite); mit einem Klick für **alle Bilder** gleichzeitig
+  - **Sammelseiten:** Bilder, die auf eine A4-Seite passen, werden im Zentimeter-Modus gemeinsam auf möglichst wenige Seiten gelegt (Abstand einstellbar, mit Schnittlinien)
+- **Übersicht** aller Bilder mit Grösse, Seitenzahl und Druckauflösung; das PDF enthält alle Bilder hintereinander
 - **Hoch- oder Querformat**, «Ganzes Bild» oder «Seiten füllen»
 - **Druckrand** und **Klebezugabe** (Überlappung) einstellbar
 - **Klebelinien und Seitencodes** (A1, A2, B1 …) auf jeder Seite
